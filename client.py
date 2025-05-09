@@ -1,10 +1,6 @@
-# cliente_bigfs.py
 import xmlrpc.client
-from xmlrpc.client import ServerProxy
-from xmlrpc.client import Binary
 import os
-import sys
-import ntpath  # já incluso no Python
+import ntpath  
 
 proxy = xmlrpc.client.ServerProxy("http://192.168.10.11:9000/RPC2", allow_none=True)
 

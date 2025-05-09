@@ -13,8 +13,6 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
 #with SimpleXMLRPCServer(("0.0.0.0", 9000), allow_none=True) as server:
 
 # Diretório exportado
-# servidor_bigfs.py
-
 EXPORT_DIR = "C:\\BigFS"
 
 def list_files(path):
