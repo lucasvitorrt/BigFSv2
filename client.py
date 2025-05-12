@@ -9,20 +9,20 @@ proxy = xmlrpc.client.ServerProxy("http://127.0.0.1:9000/RPC2", allow_none=True)
 # Função de ajuda para exibir comandos disponíveis
 def ajuda():
     print("Comandos disponíveis:")
-    print(" - ls remoto:/<pasta>".ljust(60) + "# Lista arquivos de uma pasta remota")
-    print(" - copy <origem> remoto:<destino>".ljust(60) + "# Copia arquivos do cliente para servidor")
-    print(" - copy remoto:<origem> <destino>".ljust(60) + "# Copia arquivos do servidor para cliente")
-    print(" - delete remoto:/<arquivo>".ljust(60) + "# Deleta um arquivo remoto")
-    print(" - sair".ljust(60) + "# Encerra a sessão")
-    print(" - ajuda".ljust(60) + "# Mostra Ajuda")
-    print(" - clear".ljust(60) + "# Limpar Terminal")
+    print("   ls remoto:/pasta".ljust(60) + "# Lista arquivos de uma pasta remota")
+    print("   copy \"origem\" \"remoto:/destino\"".ljust(60) + "# Copia arquivos do cliente para servidor")
+    print("   copy \"remoto:/origem/arquivo.ext\" \"destino\"".ljust(60) + "# Copia arquivos do servidor para cliente")
+    print("   delete \"remoto:/caminho/arquivo.ext\"".ljust(60) + "# Deleta um arquivo remoto")
+    print("   sair".ljust(60) + "# Encerra a sessão")
+    print("   ajuda".ljust(60) + "# Mostra Ajuda")
+    print("   limpar".ljust(60) + "# Limpar Terminal")
     print("\nExemplos de uso:")
-    print(" ls remoto:".ljust(60) + "# Lista diretorios de uma pasta remota")
-    print(" ls remoto:/arquivos/")
-    print(" copy C:\\Users\\home\\Downloads\\foto.jpg remoto:/arquivos/".ljust(60) + "# Copia arquivos do cliente para servidor")
-    print(" copy remoto:/arquivos/foto.jpg C:\\Users\\home\\Downloads/".ljust(60) + "# Copia arquivos do servidor para cliente")
-    print(" delete remoto:/arquivos/foto.jpg")
-    print(" sair")
+    print("   ls remoto:/arquivos/")
+    print("   copy \"C:\\Users\\home\\Downloads\\meu arquivo.txt\" \"remoto:/arquivos/\"")
+    print("   copy \"remoto:/arquivos/meu arquivo.txt\" \"C:\\Users\\home\\Downloads\"")
+    print("   delete \"remoto:/arquivos/meu arquivo.xlsx\"")
+    print("\nDICA: Se o caminho tiver espaços, use aspas duplas!")
+    print("DICA: Para evitar erro de permissao, use um caminho de pasta existente para salvar arquivos.")
     print("=" * 60)
 
 # Função para limpar terminal dependendo do sistema operacional
@@ -58,7 +58,7 @@ def comando_copy(origem, destino):
     if is_remote(origem) and not is_remote(destino):
         # Download do servidor para cliente
         remote_path = convert_remote(origem)
-        if destino.endswith(("\\", "/")):
+        if os.path.isdir(destino):
             destino = os.path.join(destino, os.path.basename(remote_path))
         resp = proxy.download_file(remote_path)
         if isinstance(resp, dict) and "ERROR" in resp.get("status", ""):
@@ -69,6 +69,9 @@ def comando_copy(origem, destino):
             print("Arquivo baixado com sucesso.")
     elif not is_remote(origem) and is_remote(destino):
         # Upload do cliente para servidor
+        if not os.path.exists(origem):
+            print("Arquivo local não encontrado:", origem)
+            return
         remote_path = convert_remote(destino)
         if remote_path.endswith(("\\", "/")):
             remote_path = os.path.join(remote_path, ntpath.basename(origem))
@@ -91,9 +94,14 @@ def comando_delete(path):
     if not is_remote(path):
         print("delete só pode ser feito em arquivos remotos")
         return
+    confirm = input(f"Tem certeza que deseja deletar '{path}'? (s/n): ")
+    if confirm.lower() != 's':
+        print("Operação cancelada.")
+        return
     remote_path = convert_remote(path)
     resp = proxy.delete(remote_path)
     print(resp["message"] if resp["status"] == "OK" else "Erro: " + resp["message"])
+
 
 # Interface de linha de comando interativa
 if __name__ == "__main__":
@@ -110,9 +118,8 @@ if __name__ == "__main__":
                 print("Encerrando cliente...")
                 break
 
-            #partes = entrada.split()
-            partes = entrada.split()
-            comando = partes[0]
+            partes = shlex.split(entrada)
+            comando = partes[0].lower()
 
             if comando == "ls" and len(partes) == 2:
                 comando_ls(partes[1])
@@ -122,7 +129,7 @@ if __name__ == "__main__":
                 comando_delete(partes[1])
             elif comando == "ajuda":
                 ajuda()
-            elif comando == "clear":
+            elif comando == "limpar":
                 limpar_terminal()
             else:
                 print("Comando inválido ou argumentos incorretos.")

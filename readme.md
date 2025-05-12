@@ -1,8 +1,7 @@
-# BigFS - Sistema Cliente-Servidor com XML-RPC
 
-BigFS é uma aplicação cliente-servidor escrita em Python, que permite o gerenciamento remoto de arquivos através do protocolo XML-RPC. Com ela, é possível listar, enviar, baixar e excluir arquivos de um diretório exportado pelo servidor.
+# BigFS - Sistema de Arquivos Remoto via XML-RPC
 
----
+BigFS é um sistema cliente-servidor desenvolvido em Python que permite a manipulação remota de arquivos usando o protocolo XML-RPC. O servidor exporta um diretório local e os clientes podem realizar operações como upload, download, listagem e exclusão de arquivos.
 
 ## 📁 Estrutura do Projeto
 
@@ -13,88 +12,61 @@ BigFS/
 ├── README.md           # Instruções de uso e descrição
 ```
 
----
+## 📁 Funcionalidades
 
-## ⚙️ Requisitos
+- 📂 Listar arquivos em diretórios remotos
+- ⬆️ Upload de arquivos do cliente para o servidor
+- ⬇️ Download de arquivos do servidor para o cliente
+- ❌ Exclusão de arquivos remotos
+- 🧵 Suporte a múltiplos clientes simultâneos (concorrência)
 
-* Python 3.8+
-* Sistemas operacionais suportados: Windows, Linux, MacOS
+## ⚙️ Tecnologias Utilizadas
 
----
+- Python 3.8
+- XML-RPC (via `xmlrpc.client` e `xmlrpc.server`)
+- Threading (para concorrência no servidor)
 
-## 🚀 Execução do Projeto
+## 🚀 Como Executar
 
-### 1. Clone ou copie os arquivos do projeto
+### Pré-requisitos
 
+- Python 3.8 instalado
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/lucasvitorrt/BigFSv2.git
+cd BigFS
 ```
-mkdir BigFS && cd BigFS
-# Copie os arquivos client.py e server.py para esta pasta
-```
 
-### 2. Execute o servidor
+### 2. Execute o Servidor
 
-No terminal (cmd/powershell/shell):
-
-```
+```bash
 python server.py
 ```
 
-🟢 Isso iniciará o servidor ouvindo na porta `9000`, exportando o diretório `C:\BigFS"\arquivos` (criado automaticamente, se não existir).
+O servidor será iniciado na porta `9000` e utilizará o diretório `C:\BigFS\arquivos` para armazenar os arquivos.
 
-### 3. Execute o cliente
+### 3. Execute o Cliente
 
-Em outro terminal:
+Em outro terminal, execute:
 
-```
+```bash
 python client.py
 ```
 
-Você verá o prompt de comandos interativo do BigFS:
-
-```
-Cliente BigFS conectado ao servidor. PASTA EXPORTADA: BigFS
-============================================================
-BigFS>
-```
-
----
-
-## 🧪 Comandos Suportados
-
-| Comando                          | Descrição                            |
-| -------------------------------- | ------------------------------------ |
-| `ls remoto:/pasta`               | Lista arquivos no servidor           |
-| `copy <origem> remoto:<destino>` | Envia arquivo local para o servidor  |
-| `copy remoto:<origem> <destino>` | Baixa arquivo do servidor para local |
-| `delete remoto:/arquivo`         | Remove arquivo remoto                |
-| `ajuda`                          | Exibe ajuda                          |
-| `clear`                          | Limpa terminal                       |
-| `sair`                           | Encerra o cliente                    |
+Você verá um terminal interativo com os comandos disponíveis.
 
 
----
+## ℹ️ Comandos Disponíveis
 
-## 🔐 Segurança
-
-* O servidor exporta apenas a pasta `C:\BigFS"\arquivos` (Windows). Ajuste em `server.py` se necessário.
-* O XML-RPC **não possui criptografia**, portanto recomenda-se rodar em redes seguras.
-
----
-
-## 🧹 Limitações e Melhorias Futuras
-
-### Limitações:
-
-* Sem autenticação.
-* Sem suporte a subpastas recursivas.
-
-### Melhorias Sugeridas:
-
-* Suporte a autenticação e permissões.
-* Interface gráfica (GUI ou Web).
-* Log de auditoria das operações realizadas.
-
----
+- `ls remoto:/pasta` — Lista arquivos da pasta remota.
+- `copy "origem" "remoto:/destino"` — Upload para o servidor.
+- `copy "remoto:/origem/arquivo" "destino"` — Download do servidor.
+- `delete "remoto:/caminho/arquivo"` — Deleta arquivo remoto.
+- `ajuda` — Exibe ajuda.
+- `limpar` — Limpa o terminal.
+- `sair` — Encerra o cliente.
 
 ## 📸 Exemplos de Uso (Logs)
 
@@ -104,18 +76,28 @@ Arquivos remotos:
  - documentos
  - imagem.jpg
 
-BigFS> copy C:\Users\User\Downloads\foto.png remoto:/imagens/
+BigFS> copy "C:\Users\User\Downloads\imagem.jpg" "remoto:/imagens/"
 Arquivo enviado com sucesso
 
-BigFS> copy remoto:/imagens/foto.png C:\Users\User\Desktop\foto_copia.png
+BigFS> copy "remoto:/imagens/imagem.jpg" "C:\Users\User\Desktop"
 Arquivo baixado com sucesso
 
-BigFS> delete remoto:/imagens/foto.png
+BigFS> delete remoto:/imagens/imagem.jpg
 Arquivo deletado com sucesso
 ```
 
+## ⚠️ Limitações
+
+- Caminho de diretório fixo no servidor (C:\BigFS)
+- Sem autenticação ou criptografia
+- Comunicação não segura (HTTP)
+
+## 💡 Melhorias Futuras
+
+- Suporte a HTTPS e autenticação
+- Interface gráfica para o cliente
+- Logs persistentes em arquivo
+
 ---
 
-## 📄 Licença
-
-Este projeto é livre para fins acadêmicos.
+Desenvolvido por Lucas Vitor – Projeto educacional de sistema distribuído com XML-RPC.
