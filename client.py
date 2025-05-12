@@ -2,7 +2,7 @@ import xmlrpc.client
 import os
 import ntpath  
 
-proxy = xmlrpc.client.ServerProxy("http://192.168.10.11:9000/RPC2", allow_none=True)
+proxy = xmlrpc.client.ServerProxy("http://localhost:9000/RPC2", allow_none=True)
 
 def ajuda():
     print("Comandos disponíveis:")
