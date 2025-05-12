@@ -30,7 +30,8 @@ BigFS/
 
 ### Pré-requisitos
 
-- Python 3.8 instalado
+- Python 3.8+ instalado
+- Sistema operacional Windows (de preferência)
 
 ### 1. Clone o repositório
 
@@ -82,7 +83,7 @@ Arquivo enviado com sucesso
 BigFS> copy "remoto:/imagens/imagem.jpg" "C:\Users\User\Desktop"
 Arquivo baixado com sucesso
 
-BigFS> delete remoto:/imagens/imagem.jpg
+BigFS> delete "remoto:/imagens/imagem.jpg"
 Arquivo deletado com sucesso
 ```
 
