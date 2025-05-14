@@ -101,4 +101,4 @@ BigFS> delete "remoto:/arquivos/antigo.txt"
 
 ---
 
-Desenvolvido por Lucas Vitor – Projeto educacional de sistema distribuído com XML-RPC.
+Desenvolvido por Lucas Vitor – Projeto de sistema distribuído com XML-RPC.
