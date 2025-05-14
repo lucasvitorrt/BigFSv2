@@ -1,47 +1,63 @@
-import xmlrpc.client
+import xmlrpc.client # Biblioteca que permite comunicação XML-RPC com o servidor
 import os
-import ntpath  # Usado para manipulação de caminhos
+import ntpath # Usado para manipulação de caminhos
 import shlex
+import time
+from tqdm import tqdm # Biblioteca para exibir barra de progresso
 
-# Criação do proxy para comunicação com o servidor XML-RPC
-proxy = xmlrpc.client.ServerProxy("http://127.0.0.1:9000/RPC2", allow_none=True)
+# Configuração da Conexão
+url = "http://127.0.0.1:9000/RPC2"
+proxy = xmlrpc.client.ServerProxy(url, allow_none=True)
+CHUNK_SIZE = 1024 * 1024  # Tamanho dos blocos de dados (1MB)
 
-# Função de ajuda para exibir comandos disponíveis
+# Exibe os comandos disponíveis e exemplos de uso.
 def ajuda():
-    print("Comandos disponíveis:")
-    print("   ls remoto:/pasta".ljust(60) + "# Lista arquivos de uma pasta remota")
-    print("   copy \"origem\" \"remoto:/destino\"".ljust(60) + "# Copia arquivos do cliente para servidor")
-    print("   copy \"remoto:/origem/arquivo.ext\" \"destino\"".ljust(60) + "# Copia arquivos do servidor para cliente")
-    print("   delete \"remoto:/caminho/arquivo.ext\"".ljust(60) + "# Deleta um arquivo remoto")
-    print("   sair".ljust(60) + "# Encerra a sessão")
-    print("   ajuda".ljust(60) + "# Mostra Ajuda")
-    print("   limpar".ljust(60) + "# Limpar Terminal")
+    print("=" * 60)
+    print("BigFS - Comandos disponíveis")
+    print("=" * 60)
+    
+    comandos = [
+        ("ls remoto:/pasta", "Lista arquivos da pasta remota"),
+        ("copy \"origem\" \"remoto:/destino\"", "Envia arquivo do cliente para o servidor"),
+        ("copy \"remoto:/origem\" \"destino\"", "Baixa arquivo do servidor para o cliente"),
+        ("delete \"remoto:/arquivo\"", "Remove um arquivo do servidor"),
+        ("limpar", "Limpa a tela"),
+        ("ajuda", "Exibe esta ajuda"),
+        ("sair", "Encerra o cliente")
+    ]
+
+    for cmd, desc in comandos:
+        print(f"  {cmd.ljust(40)} # {desc}")
+
     print("\nExemplos de uso:")
-    print("   ls remoto:/arquivos/")
-    print("   copy \"C:\\Users\\home\\Downloads\\meu arquivo.txt\" \"remoto:/arquivos/\"")
-    print("   copy \"remoto:/arquivos/meu arquivo.txt\" \"C:\\Users\\home\\Downloads\"")
-    print("   delete \"remoto:/arquivos/meu arquivo.xlsx\"")
-    print("\nDICA: Se o caminho tiver espaços, use aspas duplas!")
-    print("DICA: Para evitar erro de permissao, use um caminho de pasta existente para salvar arquivos.")
+    exemplos = [
+        "ls remoto:/arquivos/",
+        "copy \"C:\\Users\\home\\Downloads\\meu arquivo.txt\" \"remoto:/arquivos/\"",
+        "copy \"remoto:/arquivos/meu arquivo.txt\" \"C:\\Users\\home\\Downloads\"",
+        "delete \"remoto:/arquivos/meu arquivo.xlsx\""
+    ]
+    for exemplo in exemplos:
+        print(f"  {exemplo}")
+
+    print("\nDICAS:")
+    print("  - Use aspas duplas nos cmainhos dos arquivos")
+    print("  - Verifique se as pastas de destino existem antes de copiar.")
+    print("  - Caminhos remotos devem sempre começar com: remoto:/")
     print("=" * 60)
 
-# Função para limpar terminal dependendo do sistema operacional
+# Limpa a tela
 def limpar_terminal():
-    sistema = os.name  # Detecta o sistema operacional
-    if sistema == 'nt':  # Windows
-        os.system('cls')
-    else:  # Linux/Mac
-        os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-# Verifica se o caminho é remoto
+# Verifica se o caminho é remoto (começa com "remoto:")
 def is_remote(path):
     return path.startswith("remoto:")
 
-# Remove o prefixo 'remoto:' e retorna o caminho real
+# Remove "remoto:" do caminho e ajusta barras
 def convert_remote(path):
     return path.replace("remoto:", "").lstrip("/\\")
 
-# Comando para listar arquivos em um diretório remoto
+# Lista os arquivos de uma pasta no servidor.
 def comando_ls(path):
     remote_path = convert_remote(path)
     resp = proxy.ls(remote_path)
@@ -55,46 +71,68 @@ def comando_ls(path):
 # Comando para copiar arquivos entre cliente e servidor
 # Detecta se é upload (cliente -> servidor) ou download (servidor -> cliente)
 def comando_copy(origem, destino):
+    # Se origem é remota → download do servidor.
     if is_remote(origem) and not is_remote(destino):
-        # Download do servidor para cliente
+        # Download: servidor -> cliente
         remote_path = convert_remote(origem)
         if os.path.isdir(destino):
             destino = os.path.join(destino, os.path.basename(remote_path))
-        resp = proxy.download_file(remote_path)
-        if isinstance(resp, dict) and "ERROR" in resp.get("status", ""):
-            print("Erro:", resp["message"])
-        else:
-            with open(destino, "wb") as f:
-                f.write(resp.data)
-            print("Arquivo baixado com sucesso.")
+        size_info = proxy.get_file_size(remote_path) # Solicita tamanho do arquivo.
+        if size_info["status"] != "OK":
+            print("Erro ao obter tamanho do arquivo:", size_info["message"])
+            return
+        total_size = size_info["size"]
+        start = time.time()
+        # Baixa em pedaços e escreve localmente com barra de progresso.
+        with open(destino, "wb") as f, tqdm(total=total_size, unit="B", unit_scale=True, desc="Download") as pbar:
+            for offset in range(0, total_size, CHUNK_SIZE):
+                chunk = proxy.download_chunk(remote_path, offset, CHUNK_SIZE)
+                f.write(chunk.data)
+                pbar.update(len(chunk.data))
+        end = time.time()
+        tempo = end - start
+        print(f"\nArquivo baixado com sucesso. Tempo: {tempo:.2f}s")
+
     elif not is_remote(origem) and is_remote(destino):
-        # Upload do cliente para servidor
-        if not os.path.exists(origem):
+        # Upload: cliente -> servidor
+        if not os.path.exists(origem): # Verifica se o arquivo existe.
             print("Arquivo local não encontrado:", origem)
             return
         remote_path = convert_remote(destino)
         if remote_path.endswith(("\\", "/")):
             remote_path = os.path.join(remote_path, ntpath.basename(origem))
-        try:
-            with open(origem, "rb") as f:
-                data = f.read()
-            resp = proxy.upload_file(remote_path, xmlrpc.client.Binary(data))
-            if resp["status"] == "OK":
-                print(resp["message"])
-            else:
-                print("Erro:", resp["message"])
-        except Exception as e:
-            print("Erro ao ler arquivo local:", str(e))
+        resp = proxy.upload_init(remote_path) # Inicia o upload no servidor.
+        if resp["status"] != "OK":
+            print("Erro ao iniciar upload:", resp["message"])
+            return
+        file_size = os.path.getsize(origem)
+        start = time.time()
+        # Envia o arquivo em blocos com barra de progresso.
+        with open(origem, "rb") as f, tqdm(total=file_size, unit="B", unit_scale=True, desc="Upload") as pbar:
+            offset = 0
+            while True:
+                data = f.read(CHUNK_SIZE)
+                if not data:
+                    break
+                r = proxy.upload_chunk(remote_path, offset, xmlrpc.client.Binary(data))
+                if r["status"] != "OK":
+                    print("Erro ao enviar chunk:", r["message"])
+                    return
+                offset += len(data)
+                pbar.update(len(data))
+        end = time.time()
+        tempo = end - start
+        print(f"Arquivo enviado com sucesso. Tempo: {tempo:.2f}s")
+    
     else:
         print("Operação copy inválida (origem ou destino precisa ser remoto)")
 
 # Comando para deletar arquivos no servidor
-
 def comando_delete(path):
     if not is_remote(path):
         print("delete só pode ser feito em arquivos remotos")
         return
-    confirm = input(f"Tem certeza que deseja deletar '{path}'? (s/n): ")
+    confirm = input(f"Tem certeza que deseja deletar '{path}'? (s/n): ") # Confirma com o usuário antes de deletar.
     if confirm.lower() != 's':
         print("Operação cancelada.")
         return
@@ -102,12 +140,11 @@ def comando_delete(path):
     resp = proxy.delete(remote_path)
     print(resp["message"] if resp["status"] == "OK" else "Erro: " + resp["message"])
 
-
 # Interface de linha de comando interativa
 if __name__ == "__main__":
     print("Cliente BigFS conectado ao servidor. PASTA EXPORTADA: BigFS/arquivos")
     print("=" * 60)
-    ajuda()
+    print("Se precisar digite: ajuda")
 
     while True:
         try:
@@ -118,7 +155,7 @@ if __name__ == "__main__":
                 print("Encerrando cliente...")
                 break
 
-            partes = shlex.split(entrada)
+            partes = shlex.split(entrada) # Usa para separar os argumentos.
             comando = partes[0].lower()
 
             if comando == "ls" and len(partes) == 2:
@@ -138,4 +175,3 @@ if __name__ == "__main__":
             break
         except Exception as e:
             print("Erro inesperado:", str(e))
-            

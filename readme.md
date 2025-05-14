@@ -1,103 +1,103 @@
 
-# BigFS - Sistema de Arquivos Remoto via XML-RPC
+# BigFS - Sistema de Arquivos Distribuído Remoto via XML-RPC
 
-BigFS é um sistema cliente-servidor desenvolvido em Python que permite a manipulação remota de arquivos usando o protocolo XML-RPC. O servidor exporta um diretório local e os clientes podem realizar operações como upload, download, listagem e exclusão de arquivos.
+BigFS é uma aplicação cliente-servidor desenvolvida em Python, que permite o compartilhamento de arquivos entre cliente e servidor via rede local, utilizando o protocolo XML-RPC. O servidor exporta um diretório local e os clientes podem realizar operações como upload, download, listagem e exclusão de arquivos.
 
 ## 📁 Estrutura do Projeto
 
 ```
-BigFS/
-├── client.py           # Cliente interativo
-├── server.py           # Servidor XML-RPC com suporte a múltiplos clientes
-├── README.md           # Instruções de uso e descrição
+bigfs/
+├── client.py         # Cliente em linha de comando
+├── server.py         # Servidor XML-RPC com suporte a múltiplos clientes
+└── README.md         # Este arquivo
 ```
 
-## 📁 Funcionalidades
+## ✅ Funcionalidades
 
-- 📂 Listar arquivos em diretórios remotos
-- ⬆️ Upload de arquivos do cliente para o servidor
-- ⬇️ Download de arquivos do servidor para o cliente
-- ❌ Exclusão de arquivos remotos
-- 🧵 Suporte a múltiplos clientes simultâneos (concorrência)
+- Enviar arquivos do cliente para o servidor (`upload`)
+- Baixar arquivos do servidor para o cliente (`download`)
+- Listar arquivos em uma pasta remota (`ls`)
+- Deletar arquivos no servidor (`delete`)
+- Sincronização de acesso concorrente (via locks)
+- Barra de progresso para transferências com `tqdm`
 
-## ⚙️ Tecnologias Utilizadas
+## ⚙️ Requisitos
 
-- Python 3.8
-- XML-RPC (via `xmlrpc.client` e `xmlrpc.server`)
-- Threading (para concorrência no servidor)
+- Python 3.8 ou superior
+- Biblioteca externa:
+  - `tqdm` (para barra de progresso)
 
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- Python 3.8+ instalado
-- Sistema operacional Windows (de preferência)
-
-### 1. Clone o repositório
+### Instalação das dependências
 
 ```bash
-git clone https://github.com/lucasvitorrt/BigFSv2.git
-cd BigFS
+pip install tqdm
 ```
 
-### 2. Execute o Servidor
+## ▶️ Execução
+
+### 1. Iniciar o servidor
 
 ```bash
 python server.py
 ```
 
-O servidor será iniciado na porta `9000` e utilizará o diretório `C:\BigFS\arquivos` para armazenar os arquivos.
+O servidor escutará na porta `9000` e exportará a pasta `C:\BigFS\arquivos`.
 
-### 3. Execute o Cliente
-
-Em outro terminal, execute:
+### 2. Iniciar o cliente
 
 ```bash
 python client.py
 ```
 
-Você verá um terminal interativo com os comandos disponíveis.
+Você verá o prompt de comandos do BigFS.
 
+## 💡 Comandos disponíveis (cliente)
 
-## ℹ️ Comandos Disponíveis
+| Comando                                 | Descrição                                    |
+|----------------------------------------|----------------------------------------------|
+| `ls remoto:/pasta`                     | Lista arquivos da pasta remota               |
+| `copy "origem" "remoto:/destino"`      | Envia arquivo local para o servidor          |
+| `copy "remoto:/origem" "destino"`      | Baixa arquivo do servidor para o cliente     |
+| `delete "remoto:/arquivo"`             | Remove um arquivo do servidor                |
+| `ajuda`                                | Exibe ajuda com comandos                     |
+| `limpar`                               | Limpa a tela                                 |
+| `sair`                                 | Encerra o cliente                            |
 
-- `ls remoto:/pasta` — Lista arquivos da pasta remota.
-- `copy "origem" "remoto:/destino"` — Upload para o servidor.
-- `copy "remoto:/origem/arquivo" "destino"` — Download do servidor.
-- `delete "remoto:/caminho/arquivo"` — Deleta arquivo remoto.
-- `ajuda` — Exibe ajuda.
-- `limpar` — Limpa o terminal.
-- `sair` — Encerra o cliente.
+### Exemplos:
 
-## 📸 Exemplos de Uso (Logs)
-
-```
-BigFS> ls remoto:/
+```bash
+# Listar arquivos remotos
+BigFS> ls remoto:/arquivos
 Arquivos remotos:
  - documentos
  - imagem.jpg
 
-BigFS> copy "C:\Users\User\Downloads\imagem.jpg" "remoto:/imagens/"
-Arquivo enviado com sucesso
+# Enviar um arquivo local
+BigFS> copy "C:\Users\User\Downloads\imagem.jpg" "remoto:/arquivos/"
 
-BigFS> copy "remoto:/imagens/imagem.jpg" "C:\Users\User\Desktop"
-Arquivo baixado com sucesso
+# Baixar um arquivo remoto
+BigFS> copy "remoto:/arquivos/foto.jpg" "C:\Users\User\Downloads"
 
-BigFS> delete "remoto:/imagens/imagem.jpg"
-Arquivo deletado com sucesso
+# Deletar um arquivo remoto
+BigFS> delete "remoto:/arquivos/antigo.txt"
 ```
 
-## ⚠️ Limitações
+## 📌 Observações
 
-- Caminho de diretório fixo no servidor (C:\BigFS)
-- Sem autenticação ou criptografia
-- Comunicação não segura (HTTP)
+- Caminhos remotos devem começar com `remoto:/`
+- Use aspas duplas em caminhos
+- Pastas locais de destino devem existir antes da cópia
 
-## 💡 Melhorias Futuras
+## 🔒 Limitações
 
-- Suporte a HTTPS e autenticação
-- Interface gráfica para o cliente
-- Logs persistentes em arquivo
+- Sem autenticação de usuários
+- Sem criptografia (usa HTTP puro)
+- Não suporta retomada de transferências interrompidas
+
+## 🚀 Melhorias sugeridas
+
+- Adicionar autenticação com senha/token
+- Logs persistentes
 
 ---
 
