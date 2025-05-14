@@ -94,7 +94,7 @@ BigFS> delete "remoto:/arquivos/antigo.txt"
 - Sem criptografia (usa HTTP puro)
 - Não suporta retomada de transferências interrompidas
 
-## 🚀 Melhorias sugeridas
+## 🚀 Melhorias a implementar
 
 - Adicionar autenticação com senha/token
 - Logs persistentes
