@@ -3,6 +3,8 @@ from socketserver import ThreadingMixIn #  permite múltiplos clientes simultane
 import xmlrpc.client
 import os
 import threading # controle de concorrência.
+import hashlib
+
 
 # Diretório exportado para armazenar os arquivos manipulados
 EXPORT_DIR = "C:\\BigFS" # Define diretório onde os arquivos serão salvos.
@@ -54,6 +56,7 @@ def upload_init(path):
 # upload de um chunk (Bloco)
 def upload_chunk(path, offset, data):
     try:
+        offset = int(offset) 
         full_path = safe_path(path)
         lock = get_lock(path)
         with lock:
@@ -75,6 +78,7 @@ def get_file_size(path):
 # baixar um chunk (Bloco)
 def download_chunk(path, offset, size):
     try:
+        offset = int(offset)
         full_path = safe_path(path)
         lock = get_lock(path)
         with lock:
@@ -101,6 +105,18 @@ def delete_file(path):
 class ThreadedXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     pass
 
+def get_checksum(path):
+    try:
+        full_path = safe_path(path)
+        h = hashlib.sha256()
+        with open(full_path, "rb") as f:
+            while chunk := f.read(CHUNK_SIZE):
+                h.update(chunk)
+        return {"status": "OK", "checksum": h.hexdigest()}
+    except Exception as e:
+        return {"status": "ERROR", "message": str(e)}
+
+
 # Inicialização do servidor
 if __name__ == "__main__":
     # Cria pastas se não existirem.
@@ -109,6 +125,7 @@ if __name__ == "__main__":
     
     with ThreadedXMLRPCServer(("127.0.0.1", 9000), allow_none=True, requestHandler=RequestHandler) as server:
         # Registra as funções disponíveis.
+        server.register_function(get_checksum, 'checksum')
         server.register_function(list_files, 'ls')
         server.register_function(upload_init, 'upload_init')
         server.register_function(upload_chunk, 'upload_chunk')

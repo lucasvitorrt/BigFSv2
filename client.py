@@ -7,8 +7,8 @@ from tqdm import tqdm # Biblioteca para exibir barra de progresso
 
 # Configuração da Conexão
 url = "http://127.0.0.1:9000/RPC2"
-proxy = xmlrpc.client.ServerProxy(url, allow_none=True)
 CHUNK_SIZE = 1024 * 1024  # Tamanho dos blocos de dados (1MB)
+proxy = xmlrpc.client.ServerProxy(url, allow_none=True)
 
 # Exibe os comandos disponíveis e exemplos de uso.
 def ajuda():
@@ -71,6 +71,7 @@ def comando_ls(path):
 # Comando para copiar arquivos entre cliente e servidor
 # Detecta se é upload (cliente -> servidor) ou download (servidor -> cliente)
 def comando_copy(origem, destino):
+    proxy = xmlrpc.client.ServerProxy(url, allow_none=True)
     # Se origem é remota → download do servidor.
     if is_remote(origem) and not is_remote(destino):
         # Download: servidor -> cliente
@@ -86,7 +87,7 @@ def comando_copy(origem, destino):
         # Baixa em pedaços e escreve localmente com barra de progresso.
         with open(destino, "wb") as f, tqdm(total=total_size, unit="B", unit_scale=True, desc="Download") as pbar:
             for offset in range(0, total_size, CHUNK_SIZE):
-                chunk = proxy.download_chunk(remote_path, offset, CHUNK_SIZE)
+                chunk = proxy.download_chunk(remote_path, str(offset), CHUNK_SIZE)
                 f.write(chunk.data)
                 pbar.update(len(chunk.data))
         end = time.time()
@@ -114,7 +115,7 @@ def comando_copy(origem, destino):
                 data = f.read(CHUNK_SIZE)
                 if not data:
                     break
-                r = proxy.upload_chunk(remote_path, offset, xmlrpc.client.Binary(data))
+                r = proxy.upload_chunk(remote_path, str(offset), xmlrpc.client.Binary(data))
                 if r["status"] != "OK":
                     print("Erro ao enviar chunk:", r["message"])
                     return
